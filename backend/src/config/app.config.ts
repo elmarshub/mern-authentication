@@ -9,6 +9,7 @@ const appConfig = () => {
   const JWT_EXPIRES_IN = getEnv("JWT_EXPIRES_IN", "15m");
   const JWT_REFRESH_SECRET = getEnv("JWT_REFRESH_SECRET", "refresh-secret");
   const JWT_REFRESH_EXPIRES_IN = getEnv("JWT_REFRESH_EXPIRES_IN", "30d");
+  const MONGO_URI = getEnv("MONGO_URI");
 
   return {
     NODE_ENV,
@@ -19,6 +20,7 @@ const appConfig = () => {
     JWT_EXPIRES_IN,
     JWT_REFRESH_SECRET,
     JWT_REFRESH_EXPIRES_IN,
+    MONGO_URI,
   };
 };
 

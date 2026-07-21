@@ -1,0 +1,19 @@
+import { HTTPSTATUS } from "../../config/http.config.js";
+import type { HttpStatusCode } from "../../config/http.config.js";
+import type { ErrorCode } from "../enums/error-code.enum.js";
+
+export class AppError extends Error {
+  public statusCode: HttpStatusCode;
+  public errorCode: ErrorCode | undefined;
+
+  constructor(
+    message: string,
+    statusCode: HttpStatusCode = HTTPSTATUS.INTERNAL_SERVER_ERROR,
+    errorCode?: ErrorCode,
+  ) {
+    super(message);
+    this.statusCode = statusCode;
+    this.errorCode = errorCode;
+    Error.captureStackTrace(this, this.constructor);
+  }
+}

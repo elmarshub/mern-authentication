@@ -11,10 +11,10 @@ import connectDatabase from "./database/database.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import { HTTPSTATUS } from "./config/http.config.js";
 import { asyncHandler } from "./middlewares/asyncHandler.js";
-import { BadRequestException } from "./common/utils/catch-error.js";
+import authRoutes from "./modules/auth/auth.routes.js";
 
 const app = express();
-// const basePath = config.BASE_PATH;
+const basePath = config.BASE_PATH;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -34,6 +34,8 @@ app.get(
     res.status(HTTPSTATUS.OK).json({ message: "Hello Subscribers!" });
   }),
 );
+
+app.use(`${basePath}/auth`, authRoutes);
 
 app.use(errorHandler);
 

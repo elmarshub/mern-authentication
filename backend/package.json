@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "ts-node-dev --esm --files src/index.ts",
+    "dev": "tsx watch src/index.ts",
     "build": "tsc && cp ./package.json ./dist",
     "start": "node dist/index.js"
   },
@@ -26,6 +26,7 @@
     "@types/qrcode": "^1.5.6",
     "@types/speakeasy": "^2.0.10",
     "ts-node-dev": "^2.0.0",
+    "tsx": "^4.23.1",
     "typescript": "^5.9.3"
   },
   "dependencies": {
@@ -42,6 +43,7 @@
     "qrcode": "^1.5.4",
     "resend": "^4.8.0",
     "speakeasy": "^2.0.0",
+    "uuid": "^14.0.1",
     "zod": "^3.25.76"
   }
 }

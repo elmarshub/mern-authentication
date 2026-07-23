@@ -13,6 +13,7 @@ import { HTTPSTATUS } from "../../config/http.config.js";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { AuthService } from "./auth.service.js";
 import type { Request, Response } from "express";
+import { verificationEmailSchema } from "../../common/validators/auth.validator.js";
 
 export class AuthController {
   private authService: AuthService;
@@ -85,6 +86,17 @@ export class AuthController {
         .json({
           message: "Refresh access token successfully",
         });
+    },
+  );
+
+  public verifyEmail = asyncHandler(
+    async (req: Request, res: Response): Promise<any> => {
+      const { code } = verificationEmailSchema.parse(req.body);
+      await this.authService.verifyEmail(code);
+
+      return res.status(HTTPSTATUS.OK).json({
+        message: "Email verified successfully",
+      });
     },
   );
 }

@@ -3,12 +3,11 @@ import { ErrorCode } from "../enums/error-code.enum.js";
 import { HTTPSTATUS, type HttpStatusCode } from "../../config/http.config.js";
 
 export class NotFoundException extends AppError {
-  constructor(message = "Resource not found", errorCode: ErrorCode) {
-    super(
-      message,
-      HTTPSTATUS.NOT_FOUND,
-      errorCode || ErrorCode.RESOURCE_NOT_FOUND,
-    );
+  constructor(
+    message = "Resource not found",
+    errorCode: ErrorCode = ErrorCode.RESOURCE_NOT_FOUND,
+  ) {
+    super(message, HTTPSTATUS.NOT_FOUND, errorCode);
   }
 }
 
@@ -22,13 +21,19 @@ export class BadRequestException extends AppError {
 }
 
 export class UnauthorizedException extends AppError {
-  constructor(message = "Unauthorized", errorCode: ErrorCode) {
+  constructor(
+    message = "Unauthorized",
+    errorCode: ErrorCode = ErrorCode.AUTH_UNAUTHORIZED_ACCESS,
+  ) {
     super(message, HTTPSTATUS.UNAUTHORIZED, errorCode);
   }
 }
 
 export class ForbiddenException extends AppError {
-  constructor(message = "Forbidden", errorCode: ErrorCode) {
+  constructor(
+    message = "Forbidden",
+    errorCode: ErrorCode = ErrorCode.ACCESS_FORBIDDEN,
+  ) {
     super(message, HTTPSTATUS.FORBIDDEN, errorCode);
   }
 }

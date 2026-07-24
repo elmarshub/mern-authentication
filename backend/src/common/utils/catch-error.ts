@@ -48,6 +48,16 @@ export class MethodNotAllowedException extends AppError {
   }
 }
 
+export class HttpException extends AppError {
+  constructor(
+    message: string,
+    statusCode: HttpStatusCode,
+    errorCode: ErrorCode,
+  ) {
+    super(message, statusCode, errorCode);
+  }
+}
+
 export class InternalServerErrorException extends AppError {
   constructor(
     message: string,

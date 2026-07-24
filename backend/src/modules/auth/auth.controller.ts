@@ -6,8 +6,10 @@ import {
   getAccessTokenCookieOptions,
 } from "../../common/utils/cookie.js";
 import {
+  emailSchema,
   loginSchema,
   registerSchema,
+  resetPasswordSchema,
 } from "../../common/validators/auth.validator.js";
 import { HTTPSTATUS } from "../../config/http.config.js";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
@@ -96,6 +98,18 @@ export class AuthController {
 
       return res.status(HTTPSTATUS.OK).json({
         message: "Email verified successfully",
+      });
+    },
+  );
+
+  public forgotPassword = asyncHandler(
+    async (req: Request, res: Response): Promise<any> => {
+      const email = emailSchema.parse(req.body.email);
+
+      await this.authService.forgotPassword(email);
+
+      return res.status(HTTPSTATUS.OK).json({
+        message: "Password reset email sent successfully",
       });
     },
   );

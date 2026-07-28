@@ -196,7 +196,7 @@ export class AuthService {
   }
 
   public async verifyEmail(code: string) {
-    const validCode = await VerificationModel.findOne({
+    const validCode = await VerificationModel.findOneAndDelete({
       code: code,
       type: VerificationEnum.EMAIL_VERIFICATION,
       expiresAt: { $gt: new Date() },
@@ -220,8 +220,6 @@ export class AuthService {
         ErrorCode.VERIFICATION_ERROR,
       );
     }
-
-    await validCode.deleteOne();
 
     return {
       user: updatedUser,
@@ -286,7 +284,7 @@ export class AuthService {
   }
 
   public async resetPassword({ password, verificationCode }: ResetPasswordDto) {
-    const validCode = await VerificationModel.findOne({
+    const validCode = await VerificationModel.findOneAndDelete({
       code: verificationCode,
       type: VerificationEnum.PASSWORD_RESET,
       expiresAt: { $gt: new Date() },
@@ -305,8 +303,6 @@ export class AuthService {
     if (!updatedUser) {
       throw new BadRequestException("Failed to reset password");
     }
-
-    await validCode.deleteOne();
 
     await SessionModel.deleteMany({
       userId: updatedUser._id,

@@ -12,6 +12,7 @@ import { errorHandler } from "./middlewares/errorHandler.js";
 import { HTTPSTATUS } from "./config/http.config.js";
 import { asyncHandler } from "./middlewares/asyncHandler.js";
 import authRoutes from "./modules/auth/auth.routes.js";
+import passport from "./middlewares/passport.js";
 
 const app = express();
 const basePath = config.BASE_PATH;
@@ -27,6 +28,7 @@ app.use(
 );
 
 app.use(cookieParser());
+app.use(passport.initialize());
 
 app.get(
   "/",

@@ -125,4 +125,21 @@ export class AuthController {
       });
     },
   );
+
+  public logout = asyncHandler(
+    async (req: Request, res: Response): Promise<any> => {
+      const userId = req.user?.id;
+      const sessionId = req.sessionId;
+
+      if (!userId || !sessionId) {
+        throw new UnauthorizedException("User not authenticated");
+      }
+
+      await this.authService.logout(userId, sessionId);
+
+      return clearAuthenticationCookies(res).status(HTTPSTATUS.OK).json({
+        message: "Logged out successfully",
+      });
+    },
+  );
 }

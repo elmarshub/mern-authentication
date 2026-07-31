@@ -261,9 +261,6 @@ export class AuthService {
 
     const resetLink = `${config.APP_ORIGIN}/reset-password?code=${validCode.code}&exp=${expiresAt.getTime()}`;
 
-    // TODO: Send email with reset link
-    // await sendEmail(user.email, "Password Reset", `Click here to reset your password: ${resetLink}`);
-
     const { data, error } = await sendEmail({
       to: user.email,
       ...passwordResetTemplate(resetLink),
@@ -310,6 +307,21 @@ export class AuthService {
 
     return {
       user: updatedUser,
+    };
+  }
+
+  public async logout(userId: string, sessionId: string) {
+    const session = await SessionModel.findOneAndDelete({
+      _id: sessionId,
+      userId: userId,
+    });
+
+    if (!session) {
+      throw new NotFoundException("Session not found");
+    }
+
+    return {
+      message: "Logged out successfully",
     };
   }
 }

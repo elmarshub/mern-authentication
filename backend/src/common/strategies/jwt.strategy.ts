@@ -10,6 +10,7 @@ import config from "../../config/app.config.js";
 import type { PassportStatic } from "passport";
 import { userService } from "../../modules/user/user.module.js";
 import passport from "passport";
+import SessionModel from "../../database/models/session.model.js";
 
 interface JwtPayload {
   userId: string;
@@ -49,6 +50,17 @@ export const setupJwtStrategy = (passport: PassportStatic) => {
           if (!user) {
             return done(null, false);
           }
+
+          const session = await SessionModel.findOne({
+            _id: payload.sessionId,
+            userId: payload.userId,
+            expiresAt: { $gt: new Date() },
+          });
+
+          if (!session) {
+            return done(null, false);
+          }
+
           req.sessionId = payload.sessionId;
           return done(null, user);
         } catch (error) {

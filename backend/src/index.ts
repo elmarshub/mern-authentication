@@ -13,6 +13,8 @@ import { HTTPSTATUS } from "./config/http.config.js";
 import { asyncHandler } from "./middlewares/asyncHandler.js";
 import authRoutes from "./modules/auth/auth.routes.js";
 import passport from "./middlewares/passport.js";
+import { sessionRoutes } from "./modules/session/session.route.js";
+import { authenticateJwt } from "./common/strategies/jwt.strategy.js";
 
 const app = express();
 const basePath = config.BASE_PATH;
@@ -38,6 +40,7 @@ app.get(
 );
 
 app.use(`${basePath}/auth`, authRoutes);
+app.use(`${basePath}/session`, authenticateJwt, sessionRoutes);
 
 app.use(errorHandler);
 

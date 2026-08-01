@@ -267,6 +267,7 @@ export class AuthService {
     });
 
     if (!data || error) {
+      await VerificationModel.findByIdAndDelete(validCode._id);
       throw new InternalServerErrorException(
         "Failed to send password reset email",
         HTTPSTATUS.INTERNAL_SERVER_ERROR,

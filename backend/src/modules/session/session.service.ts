@@ -25,10 +25,10 @@ export class SessionService {
     };
   }
 
-  public async getSessionById(sessionId: string) {
-    const session = await SessionModel.findById(sessionId)
+  public async getSessionById(sessionId: string, userId: string) {
+    const session = await SessionModel.findOne({ _id: sessionId, userId })
       .populate("userId")
-      .select("-expiredAt");
+      .select("-expiresAt");
 
     if (!session) {
       throw new NotFoundException("Session not found");
@@ -42,7 +42,7 @@ export class SessionService {
   }
 
   public async deleteSession(sessionId: string, userId: string) {
-    const deletedSession = await SessionModel.findByIdAndDelete({
+    const deletedSession = await SessionModel.findOneAndDelete({
       _id: sessionId,
       userId: userId,
     });

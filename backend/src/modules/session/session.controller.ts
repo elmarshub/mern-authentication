@@ -40,11 +40,19 @@ export class SessionController {
   public getSession = asyncHandler(
     async (req: Request, res: Response): Promise<any> => {
       const sessionId = req.sessionId;
+      const userId = req.user?.id;
       if (!sessionId) {
         throw new NotFoundException("Session not found");
       }
 
-      const { user } = await this.sessionService.getSessionById(sessionId);
+      if (!userId) {
+        throw new UnauthorizedException("User not authenticated");
+      }
+
+      const { user } = await this.sessionService.getSessionById(
+        sessionId,
+        userId,
+      );
 
       return res.status(HTTPSTATUS.OK).json({
         message: "Current session retrieved successfully",
@@ -60,6 +68,10 @@ export class SessionController {
 
       if (!sessionId) {
         throw new NotFoundException("Session not found");
+      }
+
+      if (!userId) {
+        throw new UnauthorizedException("User not authenticated");
       }
 
       await this.sessionService.deleteSession(sessionId, userId);

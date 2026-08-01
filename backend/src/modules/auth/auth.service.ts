@@ -267,7 +267,9 @@ export class AuthService {
     });
 
     if (!data || error) {
-      await VerificationModel.findByIdAndDelete(validCode._id);
+      await VerificationModel.findByIdAndUpdate(validCode._id, {
+        status: "failed",
+      });
       throw new InternalServerErrorException(
         "Failed to send password reset email",
         HTTPSTATUS.INTERNAL_SERVER_ERROR,
@@ -286,6 +288,7 @@ export class AuthService {
       code: verificationCode,
       type: VerificationEnum.PASSWORD_RESET,
       expiresAt: { $gt: new Date() },
+      status: { $ne: "failed" },
     });
 
     if (!validCode) {

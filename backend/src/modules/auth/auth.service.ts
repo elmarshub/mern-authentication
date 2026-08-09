@@ -22,12 +22,11 @@ import {
 import UserModel from "../../database/models/user.model.js";
 import SessionModel from "../../database/models/session.model.js";
 import VerificationModel from "../../database/models/verification.js";
-import jwt from "jsonwebtoken";
-import type { StringValue } from "ms";
 import config from "../../config/app.config.js";
 import {
   signJwtToken,
   verifyJwtToken,
+  accessTokenSignOptions,
   refreshTokenSignOptions,
   type RefreshTPayload,
 } from "../../common/utils/jwt.js";
@@ -118,22 +117,14 @@ export class AuthService {
       userAgent,
     });
 
-    const accessToken = jwt.sign(
+    const accessToken = signJwtToken(
       { userId: user._id, sessionId: session._id },
-      config.JWT.SECRET,
-      {
-        audience: ["user"],
-        expiresIn: config.JWT.EXPIRES_IN as StringValue,
-      },
+      accessTokenSignOptions,
     );
 
-    const refreshToken = jwt.sign(
-      { userId: user._id, sessionId: session._id },
-      config.JWT.REFRESH_SECRET,
-      {
-        audience: ["user"],
-        expiresIn: config.JWT.REFRESH_EXPIRES_IN as StringValue,
-      },
+    const refreshToken = signJwtToken(
+      { sessionId: session._id },
+      refreshTokenSignOptions,
     );
 
     return {

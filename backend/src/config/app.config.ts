@@ -8,16 +8,16 @@ const appConfig = () => {
       : getEnv("APP_ORIGIN");
   const PORT = getEnv("PORT", "5000");
   const BASE_PATH = getEnv("BASE_PATH", "/api/v1");
-  const JWT_SECRET =
-    NODE_ENV === "development"
-      ? getEnv("JWT_SECRET", "secret")
-      : getEnv("JWT_SECRET");
+  const JWT_SECRET = getEnv("JWT_SECRET");
   const JWT_EXPIRES_IN = getEnv("JWT_EXPIRES_IN", "15m");
-  const JWT_REFRESH_SECRET =
-    NODE_ENV === "development"
-      ? getEnv("JWT_REFRESH_SECRET", "refresh-secret")
-      : getEnv("JWT_REFRESH_SECRET");
+  const JWT_REFRESH_SECRET = getEnv("JWT_REFRESH_SECRET");
   const JWT_REFRESH_EXPIRES_IN = getEnv("JWT_REFRESH_EXPIRES_IN", "30d");
+
+  if (JWT_SECRET.length < 32 || JWT_REFRESH_SECRET.length < 32) {
+    throw new Error(
+      "JWT_SECRET and JWT_REFRESH_SECRET must be at least 32 characters long",
+    );
+  }
   const MONGO_URI = getEnv("MONGO_URI");
   const MAILER_SENDER =
     NODE_ENV === "development"

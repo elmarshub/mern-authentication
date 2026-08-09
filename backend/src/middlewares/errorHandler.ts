@@ -6,6 +6,7 @@ import {
   REFRESH_PATH,
   clearAuthenticationCookies,
 } from "../common/utils/cookie.js";
+import config from "../config/app.config.js";
 
 const formatZodError = (err: z.ZodError) =>
   err?.issues?.map((issue) => ({
@@ -41,8 +42,12 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next): any => {
     });
   }
 
+
   return res.status(HTTPSTATUS.INTERNAL_SERVER_ERROR).json({
     message: "internal server error",
-    error: err?.message || "Unknown error",
+    error:
+      config.NODE_ENV === "development"
+        ? err?.message || "Unknown error"
+        : "Something went wrong, please try again later",
   });
 };

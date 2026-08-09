@@ -18,7 +18,12 @@ const sessionSchema = new Schema<SessionDocument>(
     },
     userAgent: { type: String, required: false },
     createdAt: { type: Date, default: Date.now },
-    expiresAt: { type: Date, required: true, default: thirtyDaysFromNow },
+    expiresAt: {
+      type: Date,
+      required: true,
+      default: thirtyDaysFromNow,
+      expires: 0,
+    },
   },
   {
     timestamps: true,

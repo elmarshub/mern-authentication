@@ -6,6 +6,7 @@ import express, {
 } from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
+import helmet from "helmet";
 import config from "./config/app.config.js";
 import connectDatabase from "./database/database.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
@@ -19,6 +20,7 @@ import { authenticateJwt } from "./common/strategies/jwt.strategy.js";
 const app = express();
 const basePath = config.BASE_PATH;
 
+app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

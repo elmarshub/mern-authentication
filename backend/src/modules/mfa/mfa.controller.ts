@@ -28,19 +28,19 @@ export class MfaController {
 
     public verifyMFASetup = asyncHandler(
         async (req: Request, res: Response) => {
-            const { code, secretKey } = verifyMFASchema.parse({
+            const { code } = verifyMFASchema.parse({
                 ...req.body,
             });
 
-            const { userPreferences, message } = await this.mfaService.verifyMFASetup(
+            const { userPreferences, message, recoveryCodes } = await this.mfaService.verifyMFASetup(
                 req,
-                code,
-                secretKey
+                code
             );
 
             return res.status(HTTPSTATUS.OK).json({
                 message,
                 userPreferences,
+                recoveryCodes,
             });
         }
     );

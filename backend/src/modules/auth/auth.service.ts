@@ -37,6 +37,11 @@ import {
 } from "../../mailers/templates/template.js";
 import { HTTPSTATUS } from "../../config/http.config.js";
 import { hashValue } from "../../common/utils/bcrypt.js";
+import {
+  assertAccountNotLocked,
+  registerFailedAttempt,
+  resetFailedAttempts,
+} from "../../common/utils/account-lockout.js";
 
 export class AuthService {
   public async register(registerData: RegisterDto) {
@@ -102,13 +107,18 @@ export class AuthService {
       );
     }
 
+    assertAccountNotLocked(user);
+
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
+      await registerFailedAttempt(user);
       throw new BadRequestException(
         "Invalid email or password provided",
         ErrorCode.AUTH_USER_NOT_FOUND,
       );
     }
+
+    await resetFailedAttempts(user);
 
     // check if user enable 2fa return user null
     if(user.userPreferences.enable2FA) {
@@ -131,7 +141,7 @@ export class AuthService {
     );
 
     const refreshToken = signJwtToken(
-      { sessionId: session._id },
+      { sessionId: session._id, version: session.refreshTokenVersion },
       refreshTokenSignOptions,
     );
 
@@ -163,6 +173,13 @@ export class AuthService {
       throw new UnauthorizedException("Session expired");
     }
 
+    if (payload.version !== session.refreshTokenVersion) {
+      await SessionModel.findByIdAndDelete(session._id);
+      throw new UnauthorizedException(
+        "Refresh token reuse detected, session revoked. Please log in again.",
+      );
+    }
+
     const sessionRequireRefresh =
       session.expiresAt.getTime() - now <= ONE_DAY_IN_MS;
 
@@ -170,6 +187,7 @@ export class AuthService {
       session.expiresAt = calculateExpirationDate(
         config.JWT.REFRESH_EXPIRES_IN,
       );
+      session.refreshTokenVersion += 1;
 
       await session.save();
     }
@@ -178,6 +196,7 @@ export class AuthService {
       ? signJwtToken(
           {
             sessionId: session._id,
+            version: session.refreshTokenVersion,
           },
           refreshTokenSignOptions,
         )

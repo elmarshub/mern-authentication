@@ -5,6 +5,7 @@ interface UserPreference {
   enable2FA: boolean;
   emailNotifications: boolean;
   twoFactorSecret?: string | undefined;
+  twoFactorRecoveryCodes?: string[] | undefined;
 }
 
 export interface UserDocument extends Document {
@@ -13,6 +14,8 @@ export interface UserDocument extends Document {
   password: string;
   isEmailVerified: boolean;
   userPreferences: UserPreference;
+  failedLoginAttempts: number;
+  lockUntil?: Date | undefined;
   createdAt: Date;
   updatedAt: Date;
   comparePassword: (value: string) => Promise<boolean>;
@@ -22,6 +25,7 @@ const userPreferencesSchema = new Schema<UserPreference>({
   enable2FA: { type: Boolean, default: false },
   emailNotifications: { type: Boolean, default: true },
   twoFactorSecret: { type: String, required: false },
+  twoFactorRecoveryCodes: { type: [String], default: undefined },
 });
 
 const userSchema = new Schema<UserDocument>(
@@ -31,6 +35,8 @@ const userSchema = new Schema<UserDocument>(
     password: { type: String, required: true },
     isEmailVerified: { type: Boolean, default: false },
     userPreferences: { type: userPreferencesSchema, default: {} },
+    failedLoginAttempts: { type: Number, default: 0 },
+    lockUntil: { type: Date, required: false },
   },
   {
     timestamps: true,
@@ -53,6 +59,7 @@ userSchema.set("toJSON", {
   transform: function (doc: Document, ret: Record<string, any>) {
     delete ret.password;
     delete ret.userPreferences.twoFactorSecret;
+    delete ret.userPreferences.twoFactorRecoveryCodes;
     return ret;
   },
 });

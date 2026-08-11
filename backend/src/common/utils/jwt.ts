@@ -12,6 +12,7 @@ export type AccessTPayload = {
 
 export type RefreshTPayload = {
   sessionId: SessionDocument["_id"];
+  version: number;
 };
 
 type SignOptsAndSecret = SignOptions & {

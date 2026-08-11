@@ -1,10 +1,49 @@
 import type { Request } from "express";
+import crypto from "node:crypto";
 import speakeasy from "speakeasy";
 import qrcode from "qrcode";
 import {  BadRequestException, NotFoundException, UnauthorizedException } from "../../common/utils/catch-error.js";
-import UserModel from "../../database/models/user.model.js";
+import UserModel, { type UserDocument } from "../../database/models/user.model.js";
 import SessionModel from "../../database/models/session.model.js";
 import { signJwtToken, accessTokenSignOptions, refreshTokenSignOptions } from "../../common/utils/jwt.js";
+import { hashValue, compareValue } from "../../common/utils/bcrypt.js";
+import {
+  assertAccountNotLocked,
+  registerFailedAttempt,
+  resetFailedAttempts,
+} from "../../common/utils/account-lockout.js";
+
+const RECOVERY_CODE_COUNT = 8;
+
+const generateRecoveryCodes = (): string[] => {
+  return Array.from({ length: RECOVERY_CODE_COUNT }, () => {
+    const raw = crypto.randomBytes(8).toString("hex").toUpperCase();
+    return raw.match(/.{1,4}/g)!.join("-");
+  });
+};
+
+const consumeRecoveryCode = async (
+  user: UserDocument,
+  code: string,
+): Promise<boolean> => {
+  const hashedCodes = user.userPreferences.twoFactorRecoveryCodes;
+  if (!hashedCodes || hashedCodes.length === 0) {
+    return false;
+  }
+
+  const normalized = code.trim().toUpperCase();
+
+  for (let i = 0; i < hashedCodes.length; i++) {
+    const matches = await compareValue(normalized, hashedCodes[i]!);
+    if (matches) {
+      hashedCodes.splice(i, 1);
+      await user.save();
+      return true;
+    }
+  }
+
+  return false;
+};
 
 export class MfaService {
  public async generateMFASetup(req: Request) {
@@ -49,7 +88,7 @@ export class MfaService {
     };
   }
 
-  public async verifyMFASetup(req: Request, code: string, secretKey: string) {
+  public async verifyMFASetup(req: Request, code: string) {
     const user = req.user
     if(!user) {
         throw new UnauthorizedException('user not authorized')
@@ -64,6 +103,11 @@ export class MfaService {
        }
     }
 
+    const secretKey = user.userPreferences.twoFactorSecret;
+    if(!secretKey) {
+        throw new BadRequestException('MFA setup was not initiated. Please request a new QR code.')
+    }
+
     const isValid = speakeasy.totp.verify({
         secret: secretKey,
         encoding: 'base32',
@@ -74,11 +118,16 @@ export class MfaService {
         throw new UnauthorizedException('Invalid MFA code. Please try again.')
     }
 
+    const recoveryCodes = generateRecoveryCodes();
+    user.userPreferences.twoFactorRecoveryCodes = await Promise.all(
+      recoveryCodes.map((c) => hashValue(c)),
+    );
     user.userPreferences.enable2FA = true;
     await user.save();
 
     return {
-      message: "MFA setup verified successfully",
+      message: "MFA setup verified successfully. Save these recovery codes somewhere safe — each can be used once if you lose access to your authenticator app, and they won't be shown again.",
+      recoveryCodes,
       userPreferences: {
         enable2FA: user.userPreferences.enable2FA,
       },
@@ -102,6 +151,7 @@ export class MfaService {
     }
 
     user.userPreferences.twoFactorSecret = undefined;
+    user.userPreferences.twoFactorRecoveryCodes = undefined;
     user.userPreferences.enable2FA = false;
     await user.save();
 
@@ -124,15 +174,20 @@ export class MfaService {
       throw new UnauthorizedException("MFA is not enabled for this user");
     }
 
+    assertAccountNotLocked(user);
+
     const isValid = speakeasy.totp.verify({
       secret: user.userPreferences.twoFactorSecret!,
       encoding: 'base32',
       token: code,
     });
 
-    if (!isValid) {
+    if (!isValid && !(await consumeRecoveryCode(user, code))) {
+      await registerFailedAttempt(user);
       throw new BadRequestException("Invalid MFA code. Please try again.");
     }
+
+    await resetFailedAttempts(user);
 
     const session = await SessionModel.create({
       userId: user._id,
@@ -145,7 +200,7 @@ export class MfaService {
     );
 
     const refreshToken = signJwtToken(
-      { sessionId: session._id },
+      { sessionId: session._id, version: session.refreshTokenVersion },
       refreshTokenSignOptions,
     );
 

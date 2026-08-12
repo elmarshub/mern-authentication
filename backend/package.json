@@ -26,11 +26,16 @@
     "@types/passport-jwt": "^4.0.1",
     "@types/qrcode": "^1.5.6",
     "@types/speakeasy": "^2.0.10",
+    "@types/supertest": "^7.2.1",
+    "@types/swagger-ui-express": "^4.1.8",
+    "mongodb-memory-server": "^11.2.0",
+    "supertest": "^7.2.2",
     "tsx": "^4.23.1",
     "typescript": "^5.9.3",
     "vitest": "^4.1.10"
   },
   "dependencies": {
+    "@asteasolutions/zod-to-openapi": "^7.3.4",
     "bcrypt": "^5.1.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
@@ -46,6 +51,7 @@
     "qrcode": "^1.5.4",
     "resend": "^4.8.0",
     "speakeasy": "^2.0.0",
+    "swagger-ui-express": "^5.0.1",
     "uuid": "^14.0.1",
     "zod": "^3.25.76"
   }

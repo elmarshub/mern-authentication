@@ -6,6 +6,7 @@ import {
   getAccessTokenCookieOptions,
 } from "../../common/utils/cookie.js";
 import {
+  changePasswordSchema,
   emailSchema,
   loginSchema,
   registerSchema,
@@ -130,6 +131,37 @@ if (mfaRequired) {
 
       return clearAuthenticationCookies(res).status(HTTPSTATUS.OK).json({
         message: "Reset Password successfully",
+      });
+    },
+  );
+
+  public changePassword = asyncHandler(
+    async (req: Request, res: Response): Promise<any> => {
+      const userId = req.user?.id;
+      const sessionId = req.sessionId;
+
+      if (!userId || !sessionId) {
+        throw new UnauthorizedException("User not authenticated");
+      }
+
+      const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
+
+      await this.authService.changePassword(userId, sessionId, currentPassword, newPassword);
+
+      return res.status(HTTPSTATUS.OK).json({
+        message: "Password changed successfully",
+      });
+    },
+  );
+
+  public resendVerificationEmail = asyncHandler(
+    async (req: Request, res: Response): Promise<any> => {
+      const email = emailSchema.parse(req.body.email);
+
+      await this.authService.resendVerificationEmail(email);
+
+      return res.status(HTTPSTATUS.OK).json({
+        message: "If an account exists for that email, a new verification link has been sent",
       });
     },
   );

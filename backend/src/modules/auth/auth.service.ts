@@ -332,6 +332,81 @@ export class AuthService {
     };
   }
 
+  public async changePassword(
+    userId: string,
+    sessionId: string,
+    currentPassword: string,
+    newPassword: string,
+  ) {
+    const user = await UserModel.findById(userId);
+
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
+
+    assertAccountNotLocked(user);
+
+    const isCurrentPasswordValid = await user.comparePassword(currentPassword);
+    if (!isCurrentPasswordValid) {
+      await registerFailedAttempt(user);
+      throw new BadRequestException("Current password is incorrect");
+    }
+
+    await resetFailedAttempts(user);
+
+    user.password = newPassword;
+    await user.save();
+
+    await SessionModel.deleteMany({ userId, _id: { $ne: sessionId } });
+
+    return {
+      message: "Password changed successfully",
+    };
+  }
+
+  public async resendVerificationEmail(email: string) {
+    const user = await UserModel.findOne({ email });
+
+    if (!user || user.isEmailVerified) {
+      return;
+    }
+
+    const timeAgo = threeMinutesAgo();
+    const maxAttempts = 2;
+    const count = await VerificationModel.countDocuments({
+      userId: user._id,
+      type: VerificationEnum.EMAIL_VERIFICATION,
+      createdAt: { $gt: timeAgo },
+    });
+
+    if (count >= maxAttempts) {
+      return;
+    }
+
+    const verification = await VerificationModel.create({
+      userId: user._id,
+      type: VerificationEnum.EMAIL_VERIFICATION,
+      expiresAt: fortyFiveMinutesFromNow(),
+    });
+
+    const verificationUrl = `${config.APP_ORIGIN}/confirm-account?code=${verification.code}`;
+    const { data, error } = await sendEmail({
+      to: user.email,
+      ...verifyEmailTemplate(verificationUrl),
+    });
+
+    if (!data || error) {
+      await VerificationModel.findByIdAndDelete(verification._id);
+      throw new InternalServerErrorException(
+        "Failed to send verification email",
+        HTTPSTATUS.INTERNAL_SERVER_ERROR,
+        ErrorCode.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    return;
+  }
+
   public async logout(userId: string, sessionId: string) {
     const session = await SessionModel.findOneAndDelete({
       _id: sessionId,

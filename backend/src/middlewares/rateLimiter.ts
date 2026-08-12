@@ -39,3 +39,11 @@ export const mfaVerifyRateLimiter = rateLimit({
   legacyHeaders: false,
   message: rateLimitResponse("Too many MFA attempts, please try again later"),
 });
+
+export const resendVerificationRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: rateLimitResponse("Too many requests, please try again later"),
+});

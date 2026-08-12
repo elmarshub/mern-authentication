@@ -36,3 +36,13 @@ export const resetPasswordSchema = z.object({
   password: passwordSchema,
   verificationCode: verificationCodeSchema,
 });
+
+export const changePasswordSchema = z
+  .object({
+    currentPassword: passwordSchema,
+    newPassword: passwordSchema,
+  })
+  .refine((val) => val.newPassword !== val.currentPassword, {
+    message: "New password must be different from the current password",
+    path: ["newPassword"],
+  });

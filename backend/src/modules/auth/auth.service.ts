@@ -377,11 +377,7 @@ export class AuthService {
     });
 
     if (count >= maxAttempts) {
-      throw new HttpException(
-        "Too many request, try again later",
-        HTTPSTATUS.TOO_MANY_REQUESTS,
-        ErrorCode.AUTH_TOO_MANY_ATTEMPTS,
-      );
+      return;
     }
 
     const verification = await VerificationModel.create({

@@ -15,6 +15,7 @@ import {
   verifyMFASchema,
   verifyMFAForLoginSchema,
 } from "../common/validators/mfa.validator.js";
+import config from "../config/app.config.js";
 
 extendZodWithOpenApi(z);
 
@@ -246,5 +247,5 @@ export const openApiDocument = generator.generateDocument({
     version: "1.0.0",
     description: "Auth, MFA, and session management endpoints.",
   },
-  servers: [{ url: "/api/v1" }],
+  servers: [{ url: config.BASE_PATH }],
 });

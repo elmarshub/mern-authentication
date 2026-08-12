@@ -46,10 +46,12 @@ app.use(`${basePath}/auth`, authRoutes);
 app.use(`${basePath}/session`, authenticateJwt, sessionRoutes);
 app.use(`${basePath}/mfa`, mfaRoutes);
 
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiDocument));
-app.get("/api-docs.json", (req: Request, res: Response) => {
-  res.json(openApiDocument);
-});
+if (config.NODE_ENV !== "production") {
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiDocument));
+  app.get("/api-docs.json", (req: Request, res: Response) => {
+    res.json(openApiDocument);
+  });
+}
 
 app.use(errorHandler);
 

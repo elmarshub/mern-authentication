@@ -12,6 +12,7 @@ vi.mock("../../src/database/models/user.model.js", () => ({
     exists: vi.fn(),
     create: vi.fn(),
     findOne: vi.fn(),
+    findById: vi.fn(),
     findByIdAndUpdate: vi.fn(),
     findByIdAndDelete: vi.fn(),
   },
@@ -303,6 +304,127 @@ describe("AuthService", () => {
       await expect(
         authService.resetPassword({ password: "newpassword123", verificationCode: "BADCODE" }),
       ).rejects.toThrow(/invalid or expired/i);
+    });
+  });
+
+  describe("changePassword", () => {
+    it("rejects when the user no longer exists", async () => {
+      vi.mocked(UserModel.findById).mockResolvedValue(null);
+
+      await expect(
+        authService.changePassword("missing-user", "s1", "current123", "newpassword123"),
+      ).rejects.toThrow(/user not found/i);
+    });
+
+    it("rejects without checking the password when the account is locked", async () => {
+      const user = makeFakeUser({ lockUntil: new Date(Date.now() + 60_000) });
+      vi.mocked(UserModel.findById).mockResolvedValue(user as any);
+
+      await expect(
+        authService.changePassword(user._id, "s1", "current123", "newpassword123"),
+      ).rejects.toThrow(/temporarily locked/i);
+
+      expect(user.comparePassword).not.toHaveBeenCalled();
+    });
+
+    it("registers a failed attempt and rejects on a wrong current password", async () => {
+      const user = makeFakeUser({ comparePassword: vi.fn().mockResolvedValue(false) });
+      vi.mocked(UserModel.findById).mockResolvedValue(user as any);
+
+      await expect(
+        authService.changePassword(user._id, "s1", "wrong-current", "newpassword123"),
+      ).rejects.toThrow(/current password is incorrect/i);
+
+      expect(user.failedLoginAttempts).toBe(1);
+    });
+
+    it("updates the password and revokes every other session, keeping the current one", async () => {
+      const user = makeFakeUser();
+      vi.mocked(UserModel.findById).mockResolvedValue(user as any);
+      vi.mocked(SessionModel.deleteMany).mockResolvedValue({} as any);
+
+      const result = await authService.changePassword(
+        user._id,
+        "current-session",
+        "current123",
+        "newpassword123",
+      );
+
+      expect(user.password).toBe("newpassword123");
+      expect(user.save).toHaveBeenCalledOnce();
+      expect(SessionModel.deleteMany).toHaveBeenCalledWith({
+        userId: user._id,
+        _id: { $ne: "current-session" },
+      });
+      expect(result.message).toMatch(/password changed/i);
+    });
+  });
+
+  describe("resendVerificationEmail", () => {
+    it("does nothing for an unknown email", async () => {
+      vi.mocked(UserModel.findOne).mockResolvedValue(null);
+
+      const result = await authService.resendVerificationEmail("nobody@example.com");
+
+      expect(result).toBeUndefined();
+      expect(sendEmail).not.toHaveBeenCalled();
+    });
+
+    it("does nothing for an already verified email", async () => {
+      vi.mocked(UserModel.findOne).mockResolvedValue({
+        _id: "u1",
+        email: "a@b.com",
+        isEmailVerified: true,
+      } as any);
+
+      const result = await authService.resendVerificationEmail("a@b.com");
+
+      expect(result).toBeUndefined();
+      expect(sendEmail).not.toHaveBeenCalled();
+    });
+
+    it("silently does nothing once the resend rate limit is hit", async () => {
+      vi.mocked(UserModel.findOne).mockResolvedValue({
+        _id: "u1",
+        email: "a@b.com",
+        isEmailVerified: false,
+      } as any);
+      vi.mocked(VerificationModel.countDocuments).mockResolvedValue(2);
+
+      const result = await authService.resendVerificationEmail("a@b.com");
+
+      expect(result).toBeUndefined();
+      expect(sendEmail).not.toHaveBeenCalled();
+    });
+
+    it("sends a new verification email for an eligible unverified user", async () => {
+      vi.mocked(UserModel.findOne).mockResolvedValue({
+        _id: "u1",
+        email: "a@b.com",
+        isEmailVerified: false,
+      } as any);
+      vi.mocked(VerificationModel.countDocuments).mockResolvedValue(0);
+      vi.mocked(VerificationModel.create).mockResolvedValue({ _id: "v1", code: "CODE1" } as any);
+      vi.mocked(sendEmail).mockResolvedValue({ data: { id: "email1" }, error: null } as any);
+
+      await authService.resendVerificationEmail("a@b.com");
+
+      expect(sendEmail).toHaveBeenCalledOnce();
+    });
+
+    it("rolls back the verification code when the email fails to send", async () => {
+      vi.mocked(UserModel.findOne).mockResolvedValue({
+        _id: "u1",
+        email: "a@b.com",
+        isEmailVerified: false,
+      } as any);
+      vi.mocked(VerificationModel.countDocuments).mockResolvedValue(0);
+      vi.mocked(VerificationModel.create).mockResolvedValue({ _id: "v1", code: "CODE1" } as any);
+      vi.mocked(sendEmail).mockResolvedValue({ data: null, error: new Error("failed") } as any);
+
+      await expect(authService.resendVerificationEmail("a@b.com")).rejects.toThrow(/failed to send/i);
+
+      expect(VerificationModel.findByIdAndDelete).toHaveBeenCalledWith("v1");
     });
   });
 
